@@ -1,7 +1,7 @@
 import pygame
 import math
 import sys
-
+import numpy as np
 
 class point:
 
@@ -39,6 +39,10 @@ class point:
         y = '%.2f' % self.y
         z = '%.2f' % self.z
         return "({},{},{})".format(x,y,z)
+
+
+    def dotProduct(self,aPoint):
+        return self.x*aPoint[0]+self.y*aPoint[1]+self.z+aPoint[2]
 
 class cube:
 
@@ -113,6 +117,11 @@ class line:
     def __str__(self):
         return "({}) -> ({})".format(self.start,self.end)
 
+    #gets normal from vector ab, from a to b
+    def getNormal(self):
+        values = [self.b.x-self.a.x,self.b.y-self.a.y,self.b.z-self.a.z]
+        return np.array(values)
+
     
 
 class sphere:
@@ -170,18 +179,57 @@ class sphere:
         else:
             return angle
 
+
+    def getViewingAngle(self,steps):
+        return steps*math.pi/60
+
+    def getPointViewer(self,angle,radius):
+        x = 0
+        y = math.cos(angle)/radius
+        y *= -1
+        z = math.sin(angle)/radius
+        return point(x,y,z)
+
+def getPlane(aPoint,normal):
+    plane = [aPoint.x,aPoint.y,aPoint.z]
+    d = 0
+    for i,j in zip(aPoint,normal):
+        d += i*j
+    d *= -1
+    plane += d
+    return plane
+
+
+
+#not in use,delete
 def projectionScreen(aPoint):
     newY = aPoint.y+((8+4*aPoint.y)/4)
     return point(aPoint.x,newY,aPoint.z)
 
-def getProjected(aPoint):
-    paralax = 0.9
+def getProjected(aPoint, viewerPoint):
+ 
    # if aPoint.y > 0:
       #  newX = aPoint.x+aPoint.y*paralax
       #  newY = aPoint.z+aPoint.y*paralax
    # else:
       #  newX = aPoint.x-aPoint.y*paralax
        # newY = aPoint.z-aPoint.y*paralax
+
+    normal = line(viewerPoint,aPoint).getNormal()
+    plane = getPlane(viewerPoint,normal)
+    distance = aPoint.dotProduct(normal) + plane[3]
+    
+    projectedX = aPoint.x+distance*normal[0]
+    projectedY = aPoint.y+distance*normal[1]
+    projectedZ = aPoint.z+distance*normal[2]
+    
+    
+    newPoint = point(projectedX,projectedZ,projectedZ )
+    print("projecting point {} to point {}".format(aPoint,newPoint))
+    return newPoint
+
+def setParalax(aPoint):
+    paralax = 0.9
 
     newX = aPoint.x*(math.e**(paralax*aPoint.y))   
     newY = aPoint.z*(math.e**(paralax*aPoint.y))  
